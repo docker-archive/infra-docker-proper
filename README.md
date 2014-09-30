@@ -14,8 +14,8 @@ running or not, so this should be save.
 
 If unsure, use `-dry` before running it.
 
-** THERE IS NO CONFIRMATION. IF YOU RUN THIS TOOL, IT WILL DELETE
-STUFF. YOU HAVE BEEN WARNED.*
+**THERE IS NO CONFIRMATION. IF YOU RUN THIS TOOL, IT WILL DELETE
+STUFF. YOU HAVE BEEN WARNED.**
 
 ## Usage
 
