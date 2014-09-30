@@ -1,0 +1,6 @@
+[{"Command":"nginx","Created":1410871517,"Id":"1272bbff4961178a66f6ab371d43e6ed815fa91db72bf8bddad685ede529cde3","Image":"5pi_nginx:latest","Names":["/nginx-server"],"Ports":[],"Status":"Exited (0) 8 days ago"}
+,{"Command":"/bin/sh -c 'nginx -c /etc/nginx.conf -t'","Created":1410871372,"Id":"8f8c42d7553c4c52dd346822445f3c6706eba523b1548bbab61770a13edb3de8","Image":"20bace6f6eeb","Names":["/kickass_ptolemy"],"Ports":[],"Status":"Exited (1) 2 weeks ago"}
+,{"Command":"/bin/bash","Created":1401791751,"Id":"3c24041c1cd0278860242c1cd1d3a4facab0efbf3c3193c615011b08eb037d60","Image":"fish/jonwood-mysql-server:latest","Names":["/sick_mclean"],"Ports":[],"Status":""}
+,{"Command":"/bin/etcd -data-dir=/data -addr=10.0.130.1:4001 -bind-addr=0.0.0.0:4001 -peer-addr=10.0.130.1:7001 -peer-bind-addr=0.0.0.0:7001 -name=58961394b07d","Created":1398359708,"Id":"b7cf418096e88d5a82b83b8a09452fbde029d73161299550763d5dcff755a57d","Image":"flynn/etcd:latest","Names":["/flynn-etcd-4606a71647ff4bca9f5909570eb7b933"],"Ports":[],"Status":"Exited (137) 3 months ago"}
+,{"Command":"./script/server -e production","Created":1393333868,"Id":"4933f2f4f9461283aaaabd9360a7ace4925697f340d9be37ea0c9f8fe0eeb11c","Image":"textkrieg:latest","Names":["/textkrieg.de"],"Ports":[{"IP":"127.0.0.1","PrivatePort":3000,"PublicPort":3000,"Type":"tcp"}],"Status":"Exited (0) 8 weeks ago"}
+]
