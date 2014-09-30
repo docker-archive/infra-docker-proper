@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/samalba/dockerclient"
 )
@@ -31,6 +32,10 @@ var (
 	deletedContainers  int
 	deletedImages      int
 )
+
+func init() {
+	now = time.Date(2014, 9, 30, 0, 0, 0, 0, time.UTC)
+}
 
 func fixture(w http.ResponseWriter, file string) {
 	fh, err := os.Open("fixtures/" + file)
