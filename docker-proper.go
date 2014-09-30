@@ -10,6 +10,8 @@ import (
 	"github.com/samalba/dockerclient"
 )
 
+const invalidFinishedAt = "0001-01-01T00:00:00Z"
+
 var (
 	now          = time.Now()
 	addr         = flag.String("a", "unix:///var/run/docker.sock", "address of docker daemon")
@@ -18,6 +20,7 @@ var (
 	interval     = flag.Duration("r", 0, "Run continously in given interval")
 
 	dry     = flag.Bool("dry", false, "Dry run; do not actually delete")
+	unsafe  = flag.Bool("u", false, "Unsafe; Delete container without FinishedAt field set")
 	verbose = flag.Bool("v", false, "Be verbose")
 )
 
@@ -97,10 +100,22 @@ func getExpiredContainers(client *dockerclient.DockerClient) ([]*dockerclient.Co
 			continue
 		}
 		debug("  + not running")
+
+		if container.State.FinishedAt == time.Date(1, 1, 1, 0, 0, 0, 0, time.UTC) && !*unsafe {
+			return nil, fmt.Errorf("Container %s has empty FinishedAt field", c.Id)
+		}
+		created, err := time.Parse(time.RFC3339, container.Created)
+		if err != nil {
+			return nil, err
+		}
+		if created.After(now.Add(-*ageContainer)) {
+			continue
+		}
+		debug("  + creation before %s", *ageContainer)
 		if container.State.FinishedAt.After(now.Add(-*ageContainer)) {
 			continue
 		}
-		debug("  + older than %s", *ageContainer)
+		debug("  + exited before %s", *ageContainer)
 		expiredContainers = append(expiredContainers, container)
 	}
 	return expiredContainers, nil
