@@ -15,6 +15,7 @@ var (
 	addr         = flag.String("a", "unix:///var/run/docker.sock", "address of docker daemon")
 	ageContainer = flag.Duration("ca", 4*7*24*time.Hour, "Max container age")
 	ageImage     = flag.Duration("ia", 4*7*24*time.Hour, "Max images age")
+	interval     = flag.Duration("r", 0, "Run continously in given interval")
 
 	dry     = flag.Bool("dry", false, "Dry run; do not actually delete")
 	verbose = flag.Bool("v", false, "Be verbose")
@@ -28,12 +29,19 @@ func debug(fs string, args ...interface{}) {
 
 func main() {
 	flag.Parse()
-	client, err := dockerclient.NewDockerClient(*addr, nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-	if err := cleanup(client); err != nil {
-		log.Fatal(err)
+	for {
+		client, err := dockerclient.NewDockerClient(*addr, nil)
+		if err != nil {
+			log.Fatal(err)
+		}
+		if err := cleanup(client); err != nil {
+			log.Fatal(err)
+		}
+		if *interval == 0 {
+			break
+		}
+		log.Printf("Sleeping for %s", *interval)
+		time.Sleep(*interval)
 	}
 }
 

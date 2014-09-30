@@ -24,7 +24,9 @@ STUFF. YOU HAVE BEEN WARNED.*
       -ca=672h0m0s: Max container age
       -dry=false: Dry run; do not actually delete
       -ia=672h0m0s: Max images age
+      -r=0: Run continously in given interval
       -v=false: Be verbose
+
 
 ## Docker image
 I dockerize all the things, also this thing.
@@ -38,3 +40,7 @@ Or just specify a remote host by using `-a`.
 You can also just use the image to pull out the docker-proper binary like this:
 
     $ docker run --rm fish/docker-proper --entrypoint cat /docker-proper/docker-proper > docker-proper
+
+If you specify `-r 24h` the docker-proper and the container will sleep
+24 hours and then repeat the cleanup. This is useful if you don't want
+to create a cronjob for this.
