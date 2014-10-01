@@ -17,7 +17,7 @@ import (
 
 const (
 	dockerApiVersion          = "/v1.10"
-	expectedDeletedContainers = 2
+	expectedDeletedContainers = 1
 	expectedDeletedImages     = 4
 )
 

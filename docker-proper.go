@@ -10,8 +10,6 @@ import (
 	"github.com/samalba/dockerclient"
 )
 
-const invalidFinishedAt = "0001-01-01T00:00:00Z"
-
 var (
 	now          = time.Now()
 	addr         = flag.String("a", "unix:///var/run/docker.sock", "address of docker daemon")
@@ -89,12 +87,18 @@ func getExpiredContainers(client *dockerclient.DockerClient) ([]*dockerclient.Co
 	if err != nil {
 		return nil, err
 	}
-	expiredContainers := []*dockerclient.ContainerInfo{}
+	usedVolumeContainers := map[string]bool{}
+	oldContainers := []*dockerclient.ContainerInfo{}
 	for _, c := range containers {
 		debug("< container: %s", c.Id)
 		container, err := client.InspectContainer(c.Id)
 		if err != nil {
 			return nil, fmt.Errorf("Couldn't inspect container %s: %s", c.Id, err)
+		}
+		if len(container.HostConfig.VolumesFrom) > 0 {
+			for _, vc := range container.HostConfig.VolumesFrom {
+				usedVolumeContainers[vc] = true
+			}
 		}
 		if container.State.Running {
 			continue
@@ -116,7 +120,16 @@ func getExpiredContainers(client *dockerclient.DockerClient) ([]*dockerclient.Co
 			continue
 		}
 		debug("  + exited before %s", *ageContainer)
-		expiredContainers = append(expiredContainers, container)
+		oldContainers = append(oldContainers, container)
+	}
+
+	expiredContainers := []*dockerclient.ContainerInfo{}
+	for _, c := range oldContainers {
+		name := c.Name[1:] // Remove leading /
+		if usedVolumeContainers[name] {
+			continue
+		}
+		expiredContainers = append(expiredContainers, c)
 	}
 	return expiredContainers, nil
 }
