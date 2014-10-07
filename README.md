@@ -3,14 +3,14 @@
 
 This tool will delete all containers that are:
 
-- Not running
+- not running
 - exited before `-ca` hours ago
+- not used as volume containers by containers created after `-ca` hours ago
 
-And will attempt(!) to delete *all* images that were created before
-`-ia` hours ago.
+And will attempt(!) to delete *all* images that are:
 
-Docker will not remove any image that is still in use by a container,
-running or not, so this should be save.
+- created before `-ia` hours ago
+- not used by any container created after `-ca` hours ago
 
 If unsure, use `-dry` before running it.
 

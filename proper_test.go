@@ -81,7 +81,7 @@ func handleDockerApi(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-func TestUnsafeCleanup(t *testing.T) {
+func TestExpired(t *testing.T) {
 	serverT = t
 	flag.Set("u", "true")
 
@@ -93,19 +93,20 @@ func TestUnsafeCleanup(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := cleanup(client); err != nil {
+	expiredContainers, expiredImages, err := getExpired(client)
+	if err != nil {
 		t.Fatal(err)
 	}
 
-	if deletedContainers != expectedDeletedContainers {
+	if len(expiredContainers) != expectedDeletedContainers {
 		t.Fatalf("Expected to delete %d container but deleted %d", expectedDeletedContainers, deletedContainers)
 	}
-	if deletedImages != expectedDeletedImages {
+	if len(expiredImages) != expectedDeletedImages {
 		t.Fatalf("Expected to delete %d container but deleted %d", expectedDeletedContainers, deletedContainers)
 	}
 }
 
-func TestCleanupUnsafeFail(t *testing.T) {
+func TestExpiredFail(t *testing.T) {
 	flag.Set("u", "false")
 
 	docker = httptest.NewServer(http.HandlerFunc(handleDockerApi))
@@ -116,7 +117,7 @@ func TestCleanupUnsafeFail(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := cleanup(client); err == nil {
+	if _, _, err := getExpired(client); err == nil {
 		t.Fatal("Expected cleanup to fail because missing FinishedAt field")
 	}
 }
