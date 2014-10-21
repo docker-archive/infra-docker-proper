@@ -164,7 +164,7 @@ func removeContainers(client *dockerclient.DockerClient, containers []*dockercli
 	for _, container := range containers {
 		log.Printf("rm %s (%s)", container.Id, container.Name)
 		if !*dry {
-			if err := client.RemoveContainer(container.Id); err != nil {
+			if err := client.RemoveContainer(container.Id, false); err != nil {
 				return fmt.Errorf("Couldn't remove container: %s", err)
 			}
 		}
