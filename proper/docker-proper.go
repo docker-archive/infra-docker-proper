@@ -57,7 +57,7 @@ func main() {
 
 func getExpired(client *dockerclient.DockerClient) (expiredContainers []*dockerclient.ContainerInfo, expiredImages []*dockerclient.Image, err error) {
 	// Containers
-	containers, err := client.ListContainers(true) // true = all containers
+	containers, err := client.ListContainers(true, true, "") // true = all containers
 	if err != nil {
 		return nil, nil, err
 	}
@@ -147,7 +147,8 @@ func removeImages(client *dockerclient.DockerClient, images []*dockerclient.Imag
 	for _, image := range images {
 		log.Print("rmi ", image.Id)
 		if !*dry {
-			if err := client.RemoveImage(image.Id); err != nil {
+			_, err := client.RemoveImage(image.Id)
+			if err != nil {
 				/*				if derr, ok := err.(dockerclient.Error); ok {
 								if derr.StatusCode == http.StatusConflict {
 									continue // ignore images in use
@@ -164,7 +165,7 @@ func removeContainers(client *dockerclient.DockerClient, containers []*dockercli
 	for _, container := range containers {
 		log.Printf("rm %s (%s)", container.Id, container.Name)
 		if !*dry {
-			if err := client.RemoveContainer(container.Id, false); err != nil {
+			if err := client.RemoveContainer(container.Id, false, true); err != nil {
 				return fmt.Errorf("Couldn't remove container: %s", err)
 			}
 		}

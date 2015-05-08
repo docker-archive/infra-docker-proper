@@ -6,7 +6,8 @@ RUN        curl -s https://go.googlecode.com/files/go1.2.linux-amd64.tar.gz | ta
 ENV        PATH    /usr/local/go/bin:$PATH
 ENV        GOPATH  /go
 
-ADD        . /docker-proper
+ADD        proper /docker-proper
+ADD        serverconf/cron.clean_docker_logs /etc/cron.daily/clean_docker_logs
 WORKDIR    /docker-proper
 RUN        go get -d && go build
 ENTRYPOINT [ "./docker-proper" ]

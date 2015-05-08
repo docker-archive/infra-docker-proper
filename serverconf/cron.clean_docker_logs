@@ -1,0 +1,3 @@
+#!/bin/bash -ex
+
+/usr/bin/find /mnt/docker/containers/*/ -type f -name '*.log' -size +2G | /usr/bin/xargs -r0 truncate -s 0
