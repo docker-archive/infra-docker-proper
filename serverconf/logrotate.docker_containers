@@ -1,0 +1,9 @@
+/mnt/docker/containers/*/*.log {
+  daily
+  size 2G
+  rotate 2
+  compress
+  missingok
+  notifempty
+  copytruncate
+}
