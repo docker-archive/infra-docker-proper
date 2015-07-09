@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log"
 	"time"
 
@@ -57,7 +56,7 @@ func main() {
 
 func getExpired(client *dockerclient.DockerClient) (expiredContainers []*dockerclient.ContainerInfo, expiredImages []*dockerclient.Image, err error) {
 	// Containers
-	containers, err := client.ListContainers(true) // true = all containers
+	containers, err := client.ListContainers(true, false, "") // true = all containers
 	if err != nil {
 		return nil, nil, err
 	}
@@ -69,7 +68,8 @@ func getExpired(client *dockerclient.DockerClient) (expiredContainers []*dockerc
 		debug("< container: %s", c.Id)
 		container, err := client.InspectContainer(c.Id)
 		if err != nil {
-			return nil, nil, fmt.Errorf("Couldn't inspect container %s: %s", c.Id, err)
+                        debug("Couldn't inspect container %s, skipping: %s", c.Id, err)
+                        continue
 		}
 
 		// Increment reference counter refering to how many containers use volume container and image
@@ -78,28 +78,30 @@ func getExpired(client *dockerclient.DockerClient) (expiredContainers []*dockerc
 				usedVolumeContainers[vc]++
 			}
 		}
+		debug("Container %s uses image %s", c.Id, container.Image)
 		usedImages[container.Image]++
 
 		if container.State.Running {
-			continue
+                        continue
 		}
 		debug("  + not running")
 
 		if container.State.FinishedAt == time.Date(1, 1, 1, 0, 0, 0, 0, time.UTC) && !*unsafe {
-			return nil, nil, fmt.Errorf("Container %s has empty FinishedAt field", c.Id)
+                        debug("Container %s has empty FinishedAt field, skipping", c.Id)
+                        continue
 		}
 		created, err := time.Parse(time.RFC3339, container.Created)
 		if err != nil {
 			return nil, nil, err
 		}
 		if created.After(now.Add(-*ageContainer)) {
-			continue
+                        continue
 		}
-		debug("  + creation before %s", *ageContainer)
+		debug("  + creation time is older than %s", *ageContainer)
 		if container.State.FinishedAt.After(now.Add(-*ageContainer)) {
-			continue
+                        continue
 		}
-		debug("  + exited before %s", *ageContainer)
+		debug("  + exit time is older than %s", *ageContainer)
 
 		// Decrement reference counter for old containers
 		if len(container.HostConfig.VolumesFrom) > 0 {
@@ -122,12 +124,13 @@ func getExpired(client *dockerclient.DockerClient) (expiredContainers []*dockerc
 	log.Printf("Found %d expired containers", len(expiredContainers))
 
 	// Images
-	images, err := client.ListImages()
+	images, err := client.ListImages(true)
 	if err != nil {
 		return nil, nil, err
 	}
+
 	for _, image := range images {
-		debug("< image: %s", image.Id)
+		debug("< image id: %s", image.Id)
 		ctime := time.Unix(image.Created, 0)
 		if ctime.After(now.Add(-*ageImage)) {
 			continue
@@ -147,13 +150,8 @@ func removeImages(client *dockerclient.DockerClient, images []*dockerclient.Imag
 	for _, image := range images {
 		log.Print("rmi ", image.Id)
 		if !*dry {
-			if err := client.RemoveImage(image.Id); err != nil {
-				/*				if derr, ok := err.(dockerclient.Error); ok {
-								if derr.StatusCode == http.StatusConflict {
-									continue // ignore images in use
-								}
-							}*/
-				return fmt.Errorf("Couldn't remove image: %s", err)
+			if _, err := client.RemoveImage(image.Id); err != nil {
+				debug("Couldn't remove image: %s", err)
 			}
 		}
 	}
@@ -164,8 +162,8 @@ func removeContainers(client *dockerclient.DockerClient, containers []*dockercli
 	for _, container := range containers {
 		log.Printf("rm %s (%s)", container.Id, container.Name)
 		if !*dry {
-			if err := client.RemoveContainer(container.Id, false); err != nil {
-				return fmt.Errorf("Couldn't remove container: %s", err)
+			if err := client.RemoveContainer(container.Id, false, false); err != nil {
+				debug("Couldn't remove container: %s", err)
 			}
 		}
 	}
