@@ -4,12 +4,12 @@
 This tool will delete all containers that are:
 
 - not running
-- exited before `-ca` hours ago
+- exit time is older than `-ca` hours ago
 - not used as volume containers by containers created after `-ca` hours ago
 
 And will attempt(!) to delete *all* images that are:
 
-- created before `-ia` hours ago
+- creation time is older than `-ia` hours ago
 - not used by any container created after `-ca` hours ago
 
 If unsure, use `-dry` before running it.
