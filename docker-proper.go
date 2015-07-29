@@ -9,7 +9,6 @@ import (
 )
 
 var (
-	now          = time.Now()
 	addr         = flag.String("a", "unix:///var/run/docker.sock", "address of docker daemon")
 	ageContainer = flag.Duration("ca", 4*7*24*time.Hour, "Max container age")
 	ageImage     = flag.Duration("ia", 4*7*24*time.Hour, "Max images age")
@@ -55,6 +54,7 @@ func main() {
 }
 
 func getExpired(client *dockerclient.DockerClient) (expiredContainers []*dockerclient.ContainerInfo, expiredImages []*dockerclient.Image, err error) {
+        now := time.Now()
 	// Containers
 	containers, err := client.ListContainers(true, false, "") // true = all containers
 	if err != nil {
@@ -82,6 +82,7 @@ func getExpired(client *dockerclient.DockerClient) (expiredContainers []*dockerc
 		usedImages[container.Image]++
 
 		if container.State.Running {
+                        debug("Container is still running")
                         continue
 		}
 		debug("  + not running")
@@ -94,11 +95,14 @@ func getExpired(client *dockerclient.DockerClient) (expiredContainers []*dockerc
 		if err != nil {
 			return nil, nil, err
 		}
+		debug("Container and image threshold %s", now.Add(-*ageContainer))
 		if created.After(now.Add(-*ageContainer)) {
+                        debug("Creation time is not old enough: %s", created)
                         continue
 		}
 		debug("  + creation time is older than %s", *ageContainer)
 		if container.State.FinishedAt.After(now.Add(-*ageContainer)) {
+                        debug("Exit time is not old enough: %s", container.State.FinishedAt)
                         continue
 		}
 		debug("  + exit time is older than %s", *ageContainer)
