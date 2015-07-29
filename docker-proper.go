@@ -68,7 +68,7 @@ func getExpired(client *dockerclient.DockerClient) (expiredContainers []*dockerc
 		debug("< container: %s", c.Id)
 		container, err := client.InspectContainer(c.Id)
 		if err != nil {
-                        debug("Couldn't inspect container %s, skipping: %s", c.Id, err)
+                        debug("  + Couldn't inspect container %s, skipping: %s", c.Id, err)
                         continue
 		}
 
@@ -95,14 +95,14 @@ func getExpired(client *dockerclient.DockerClient) (expiredContainers []*dockerc
 		if err != nil {
 			return nil, nil, err
 		}
-		debug("Container and image threshold %s", now.Add(-*ageContainer))
+		debug("  + Container and image threshold %s", now.Add(-*ageContainer))
 		if created.After(now.Add(-*ageContainer)) {
                         debug("  + Creation time is not old enough: %s", created)
                         continue
 		}
 		debug("  + Creation time is older than %s", *ageContainer)
 		if container.State.FinishedAt.After(now.Add(-*ageContainer)) {
-                        debug("Exit time is not old enough: %s", container.State.FinishedAt)
+                        debug("  + Exit time is not old enough: %s", container.State.FinishedAt)
                         continue
 		}
 		debug("  + Exit time is older than %s", *ageContainer)
