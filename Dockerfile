@@ -1,5 +1,5 @@
 FROM       debian:jessie
-MAINTAINER Johannes 'fish' Ziemke <fish@docker.com> (@discordianfish)
+MAINTAINER Brian Glogower <bglogower@docker.com> (@xbglowx)
 
 RUN        apt-get update && apt-get install -yq curl git
 RUN        curl -s https://storage.googleapis.com/golang/go1.4.2.linux-amd64.tar.gz | tar -C /usr/local -xzf -

@@ -154,7 +154,7 @@ func removeImages(client *dockerclient.DockerClient, images []*dockerclient.Imag
 	for _, image := range images {
 		log.Print("rmi ", image.Id)
 		if !*dry {
-			if _, err := client.RemoveImage(image.Id); err != nil {
+			if _, err := client.RemoveImage(image.Id, false); err != nil {
 				debug("Couldn't remove image: %s", err)
 			}
 		}
