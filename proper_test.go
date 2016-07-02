@@ -10,13 +10,12 @@ import (
 	"regexp"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/samalba/dockerclient"
 )
 
 const (
-	dockerApiVersion          = "/v1.10"
+	dockerAPIVersion          = "/v1.10"
 	expectedDeletedContainers = 1
 	expectedDeletedImages     = 4
 )
@@ -27,15 +26,11 @@ var (
 
 	serverT *testing.T
 
-	matchContainersUrl = regexp.MustCompile("^" + dockerApiVersion + "/containers/([^/]+)")
-	matchImagesUrl     = regexp.MustCompile("^" + dockerApiVersion + "/images/([^/]+)")
+	matchContainersURL = regexp.MustCompile("^" + dockerAPIVersion + "/containers/([^/]+)")
+	matchImagesURL     = regexp.MustCompile("^" + dockerAPIVersion + "/images/([^/]+)")
 	deletedContainers  int
 	deletedImages      int
 )
-
-func init() {
-	now = time.Date(2014, 9, 30, 0, 0, 0, 0, time.UTC)
-}
 
 func fixture(w http.ResponseWriter, file string) {
 	fh, err := os.Open("fixtures/" + file)
@@ -48,13 +43,13 @@ func fixture(w http.ResponseWriter, file string) {
 	}
 }
 
-func handleDockerApi(w http.ResponseWriter, r *http.Request) {
+func handleDockerAPI(w http.ResponseWriter, r *http.Request) {
 	switch {
-	case strings.HasPrefix(r.URL.Path, dockerApiVersion+"/containers/json"):
+	case strings.HasPrefix(r.URL.Path, dockerAPIVersion+"/containers/json"):
 		fixture(w, "containers.json")
 		return
-	case strings.HasPrefix(r.URL.Path, dockerApiVersion+"/containers/"):
-		matches := matchContainersUrl.FindStringSubmatch(r.URL.Path)
+	case strings.HasPrefix(r.URL.Path, dockerAPIVersion+"/containers/"):
+		matches := matchContainersURL.FindStringSubmatch(r.URL.Path)
 		if len(matches) != 2 {
 			serverT.Fatal("ID not found in url ", r.URL.Path)
 		}
@@ -66,11 +61,11 @@ func handleDockerApi(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprintf(w, "")
 		}
 		return
-	case strings.HasPrefix(r.URL.Path, dockerApiVersion+"/images/json"):
+	case strings.HasPrefix(r.URL.Path, dockerAPIVersion+"/images/json"):
 		fixture(w, "images.json")
 		return
-	case strings.HasPrefix(r.URL.Path, dockerApiVersion+"/images"):
-		matches := matchImagesUrl.FindStringSubmatch(r.URL.Path)
+	case strings.HasPrefix(r.URL.Path, dockerAPIVersion+"/images"):
+		matches := matchImagesURL.FindStringSubmatch(r.URL.Path)
 		if len(matches) != 2 {
 			serverT.Fatal("ID not found in url ", r.URL.Path)
 		}
@@ -85,7 +80,7 @@ func TestExpired(t *testing.T) {
 	serverT = t
 	flag.Set("u", "true")
 
-	docker = httptest.NewServer(http.HandlerFunc(handleDockerApi))
+	docker = httptest.NewServer(http.HandlerFunc(handleDockerAPI))
 	defer docker.Close()
 
 	client, err := dockerclient.NewDockerClient(docker.URL, nil)
@@ -93,7 +88,7 @@ func TestExpired(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	expiredContainers, expiredImages, err := getExpired(client)
+	expiredContainers, err := getExpiredContainers(client)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -101,15 +96,12 @@ func TestExpired(t *testing.T) {
 	if len(expiredContainers) != expectedDeletedContainers {
 		t.Fatalf("Expected to delete %d container but deleted %d", expectedDeletedContainers, deletedContainers)
 	}
-	if len(expiredImages) != expectedDeletedImages {
-		t.Fatalf("Expected to delete %d container but deleted %d", expectedDeletedContainers, deletedContainers)
-	}
 }
 
 func TestExpiredFail(t *testing.T) {
 	flag.Set("u", "false")
 
-	docker = httptest.NewServer(http.HandlerFunc(handleDockerApi))
+	docker = httptest.NewServer(http.HandlerFunc(handleDockerAPI))
 	defer docker.Close()
 
 	client, err := dockerclient.NewDockerClient(docker.URL, nil)
@@ -117,7 +109,7 @@ func TestExpiredFail(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if _, _, err := getExpired(client); err == nil {
+	if _, err := getExpiredContainers(client); err == nil {
 		t.Fatal("Expected cleanup to fail because missing FinishedAt field")
 	}
 }
