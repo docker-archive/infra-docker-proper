@@ -34,7 +34,7 @@ func main() {
             log.Fatal(err)
         }
 
-        expiredContainers, err := getExpiredContainers(client)
+        expiredContainers, usedImages, err := getExpiredContainers(client)
         if err != nil {
             log.Fatal(err)
         }
@@ -42,7 +42,7 @@ func main() {
             log.Fatal(err)
         }
 
-        if err := removeImages(client); err != nil {
+        if err := removeImages(client, usedImages); err != nil {
             log.Fatal(err)
         }
 
@@ -54,14 +54,14 @@ func main() {
     }
 }
 
-func getExpiredContainers(client *dockerclient.DockerClient) (expiredContainers []*dockerclient.ContainerInfo, err error) {
+func getExpiredContainers(client *dockerclient.DockerClient) (expiredContainers []*dockerclient.ContainerInfo, usedImages map[string][]string, err error) {
     containers, err := client.ListContainers(true, false, "") // true = all containers
     if err != nil {
-        return nil, err
+        return nil, nil, err
     }
 
     usedVolumeContainers := map[string]int{}
-    usedImages := map[string]int{}
+    usedImages = map[string][]string{}
     oldContainers := []*dockerclient.ContainerInfo{}
     for _, c := range containers {
         debug("< container: %s", c.Id)
@@ -71,14 +71,21 @@ func getExpiredContainers(client *dockerclient.DockerClient) (expiredContainers 
             continue
         }
 
-        // Increment reference counter refering to how many containers use volume container and image
+        // Keep track of images and which containers use them
+        if containerNames, ok := usedImages[container.Image]; ok {
+            containerNames = append(containerNames, container.Name)
+            usedImages[container.Image] = containerNames
+        } else {
+            usedImages[container.Image] = []string{container.Name}
+        }
+
+        // Increment reference counter refering to how many containers use volume container
         if len(container.HostConfig.VolumesFrom) > 0 {
             for _, vc := range container.HostConfig.VolumesFrom {
                 usedVolumeContainers[vc]++
             }
         }
         debug("  + Container %s uses image %s", c.Id, container.Image)
-        usedImages[container.Image]++
 
         if container.State.Running {
             debug("  + Container is still running")
@@ -92,7 +99,7 @@ func getExpiredContainers(client *dockerclient.DockerClient) (expiredContainers 
         }
         created, err := time.Parse(time.RFC3339, container.Created)
         if err != nil {
-            return nil, err
+            return nil, nil, err
         }
         debug("  + Container and image threshold %s", now.Add(-*ageContainer))
         if created.After(now.Add(-*ageContainer)) {
@@ -112,8 +119,16 @@ func getExpiredContainers(client *dockerclient.DockerClient) (expiredContainers 
                 usedVolumeContainers[vc]--
             }
         }
-        usedImages[container.Image]--
 
+        // Let's remove container reference from the image list, since said
+        // container will soon be deleted.
+        containerNames := usedImages[container.Image]
+        containerNames = containerNames[:len(containerNames)-1]
+        if len(containerNames) == 0 {
+            delete(usedImages, container.Image)
+        } else {
+            usedImages[container.Image] = containerNames
+        }
         oldContainers = append(oldContainers, container)
     }
 
@@ -124,15 +139,15 @@ func getExpiredContainers(client *dockerclient.DockerClient) (expiredContainers 
         }
         expiredContainers = append(expiredContainers, c)
     }
-    log.Printf("Found %d expired containers", len(expiredContainers))
 
-    return expiredContainers, nil
+    log.Printf("Found %d expired containers", len(expiredContainers))
+    return expiredContainers, usedImages, nil
 }
 
 // Search for all images that have expired based on operator input and try to
 // remove them. If they are currently being used, the remvoal will fail, but that
 // is OK.
-func removeImages(client *dockerclient.DockerClient) error {
+func removeImages(client *dockerclient.DockerClient, usedImages map[string][]string) error {
     expiredImages := []*dockerclient.Image{}
     images, err := client.ListImages(true)
     if err != nil {
@@ -141,6 +156,13 @@ func removeImages(client *dockerclient.DockerClient) error {
 
     for _, image := range images {
         debug("< image id: %s", image.Id)
+
+        // If image is still being used, let's skip it.
+        if containers, ok := usedImages[image.Id]; ok {
+            debug("  + skipping image %s, since it is still being used by %v.", image.Id, containers)
+            continue
+        }
+
         ctime := time.Unix(image.Created, 0)
         if ctime.After(now.Add(-*ageImage)) {
             continue
