@@ -33,13 +33,13 @@ I dockerize all the things, also this thing.
 
 You can use it to remove stuff from local machine by bind-mounting the socket:
 
-    $ docker run --rm -v /var/run/docker.sock:/docker.sock fish/docker-proper -a unix:///docker.sock
+    $ docker run --rm -v /var/run/docker.sock:/docker.sock dckr/docker-proper -a unix:///docker.sock
 
 Or just specify a remote host by using `-a`.
 
 You can also just use the image to pull out the docker-proper binary like this:
 
-    $ docker run --rm fish/docker-proper --entrypoint cat /docker-proper/docker-proper > docker-proper
+    $ docker run --rm dckr/docker-proper --entrypoint cat /docker-proper/docker-proper > docker-proper
 
 If you specify `-r 24h` the docker-proper and the container will sleep
 24 hours and then repeat the cleanup. This is useful if you don't want
