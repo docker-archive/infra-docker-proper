@@ -16,7 +16,6 @@ var (
     dry          = flag.Bool("dry", false, "Dry run; do not actually delete")
     unsafe       = flag.Bool("u", false, "Unsafe; Delete container without FinishedAt field set")
     verbose      = flag.Bool("v", false, "Be verbose")
-    now          = time.Now()
 )
 
 func debug(fs string, args ...interface{}) {
@@ -29,12 +28,13 @@ func main() {
     flag.Parse()
 
     for {
+        now := time.Now()
         client, err := dockerclient.NewDockerClient(*addr, nil)
         if err != nil {
             log.Fatal(err)
         }
 
-        expiredContainers, usedImages, err := getExpiredContainers(client)
+        expiredContainers, usedImages, err := getExpiredContainers(client, now)
         if err != nil {
             log.Fatal(err)
         }
@@ -42,7 +42,7 @@ func main() {
             log.Fatal(err)
         }
 
-        if err := removeImages(client, usedImages); err != nil {
+        if err := removeImages(client, usedImages, now); err != nil {
             log.Fatal(err)
         }
 
@@ -54,7 +54,7 @@ func main() {
     }
 }
 
-func getExpiredContainers(client *dockerclient.DockerClient) (expiredContainers []*dockerclient.ContainerInfo, usedImages map[string][]string, err error) {
+func getExpiredContainers(client *dockerclient.DockerClient, now time.Time) (expiredContainers []*dockerclient.ContainerInfo, usedImages map[string][]string, err error) {
     containers, err := client.ListContainers(true, false, "") // true = all containers
     if err != nil {
         return nil, nil, err
@@ -147,7 +147,7 @@ func getExpiredContainers(client *dockerclient.DockerClient) (expiredContainers 
 // Search for all images that have expired based on operator input and try to
 // remove them. If they are currently being used, the remvoal will fail, but that
 // is OK.
-func removeImages(client *dockerclient.DockerClient, usedImages map[string][]string) error {
+func removeImages(client *dockerclient.DockerClient, usedImages map[string][]string, now time.Time) error {
     expiredImages := []*dockerclient.Image{}
     images, err := client.ListImages(true)
     if err != nil {
